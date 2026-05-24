@@ -13,12 +13,14 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
 import java.util.Set;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class WalletService {
 
     private static final Logger log = LoggerFactory.getLogger(WalletService.class);
@@ -26,10 +28,6 @@ public class WalletService {
     private static final Set<String> SUPPORTED_ASSETS = Set.of("USDT", "ETH", "BTC");
 
     private final WalletRepository walletRepository;
-
-    public WalletService(WalletRepository walletRepository) {
-        this.walletRepository = walletRepository;
-    }
 
     @Transactional(readOnly = true)
     public WalletBalanceResponse getBalances(User user) {

@@ -5,19 +5,16 @@ import com.project.crypto.domain.entity.User;
 import com.project.crypto.domain.entity.Wallet;
 import com.project.crypto.repository.WalletRepository;
 import java.math.BigDecimal;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class WalletSetupService {
 
     private final WalletRepository walletRepository;
     private final WalletProperties walletProperties;
-
-    public WalletSetupService(WalletRepository walletRepository, WalletProperties walletProperties) {
-        this.walletRepository = walletRepository;
-        this.walletProperties = walletProperties;
-    }
 
     @Transactional
     public void createWalletsForUser(User user) {

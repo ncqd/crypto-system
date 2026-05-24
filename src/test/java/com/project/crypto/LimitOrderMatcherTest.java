@@ -25,7 +25,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.ResourcelessTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @ExtendWith(MockitoExtension.class)
 class LimitOrderMatcherTest {
@@ -53,13 +55,15 @@ class LimitOrderMatcherTest {
     void setUp() {
         user.setId(1L);
         when(cryptoProperties.getMaxPriceAgeMs()).thenReturn(30_000L);
+        TransactionTemplate transactionTemplate = new TransactionTemplate(new ResourcelessTransactionManager());
+        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         limitOrderMatcher = new LimitOrderMatcher(
                 limitOrderRepository,
                 aggregatedPriceRepository,
                 walletRepository,
                 tradeTransactionRepository,
                 cryptoProperties,
-                new ResourcelessTransactionManager());
+                transactionTemplate);
     }
 
     @Test

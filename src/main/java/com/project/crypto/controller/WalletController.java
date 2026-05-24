@@ -8,6 +8,7 @@ import com.project.crypto.security.SecurityUtils;
 import com.project.crypto.service.UserContextService;
 import com.project.crypto.service.WalletService;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -18,15 +19,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/wallet")
+@RequiredArgsConstructor
 public class WalletController {
 
     private final UserContextService userContextService;
     private final WalletService walletService;
-
-    public WalletController(UserContextService userContextService, WalletService walletService) {
-        this.userContextService = userContextService;
-        this.walletService = walletService;
-    }
 
     @GetMapping("/balances")
     public WalletBalanceResponse getBalances() {

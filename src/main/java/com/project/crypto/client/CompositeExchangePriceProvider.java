@@ -7,6 +7,7 @@ import com.project.crypto.support.AppLog;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Primary;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Primary
+@RequiredArgsConstructor
 public class CompositeExchangePriceProvider implements ExchangePriceProvider {
 
     private static final Logger log = LoggerFactory.getLogger(CompositeExchangePriceProvider.class);
@@ -21,15 +23,6 @@ public class CompositeExchangePriceProvider implements ExchangePriceProvider {
     private final Optional<ExchangePriceClient> exchangePriceClient;
     private final InternalExchangePriceProvider internalExchangePriceProvider;
     private final CryptoProperties cryptoProperties;
-
-    public CompositeExchangePriceProvider(
-            Optional<ExchangePriceClient> exchangePriceClient,
-            InternalExchangePriceProvider internalExchangePriceProvider,
-            CryptoProperties cryptoProperties) {
-        this.exchangePriceClient = exchangePriceClient;
-        this.internalExchangePriceProvider = internalExchangePriceProvider;
-        this.cryptoProperties = cryptoProperties;
-    }
 
     @Override
     public Map<TradingPair, ExchangeQuote> fetchBinanceQuotes() {

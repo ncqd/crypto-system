@@ -9,6 +9,7 @@ import com.project.crypto.repository.UserRepository;
 import com.project.crypto.security.JwtService;
 import com.project.crypto.support.AppLog;
 import java.time.Instant;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class AuthService {
 
     private static final Logger log = LoggerFactory.getLogger(AuthService.class);
@@ -24,17 +26,6 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final WalletSetupService walletSetupService;
-
-    public AuthService(
-            UserRepository userRepository,
-            PasswordEncoder passwordEncoder,
-            JwtService jwtService,
-            WalletSetupService walletSetupService) {
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.jwtService = jwtService;
-        this.walletSetupService = walletSetupService;
-    }
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {

@@ -18,12 +18,14 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class LimitOrderService {
 
     private static final Logger log = LoggerFactory.getLogger(LimitOrderService.class);
@@ -32,15 +34,6 @@ public class LimitOrderService {
     private final LimitOrderRepository limitOrderRepository;
     private final WalletRepository walletRepository;
     private final LimitOrderMatcher limitOrderMatcher;
-
-    public LimitOrderService(
-            LimitOrderRepository limitOrderRepository,
-            WalletRepository walletRepository,
-            LimitOrderMatcher limitOrderMatcher) {
-        this.limitOrderRepository = limitOrderRepository;
-        this.walletRepository = walletRepository;
-        this.limitOrderMatcher = limitOrderMatcher;
-    }
 
     @Transactional(rollbackFor = Exception.class)
     public LimitOrderResponse placeLimitOrder(User user, LimitOrderRequest request) {

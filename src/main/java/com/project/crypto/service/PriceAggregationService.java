@@ -11,6 +11,7 @@ import com.project.crypto.support.QuoteValidator;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cache.annotation.CacheEvict;
@@ -18,19 +19,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class PriceAggregationService {
 
     private static final Logger log = LoggerFactory.getLogger(PriceAggregationService.class);
 
     private final ExchangePriceProvider exchangePriceProvider;
     private final AggregatedPriceRepository aggregatedPriceRepository;
-
-    public PriceAggregationService(
-            ExchangePriceProvider exchangePriceProvider,
-            AggregatedPriceRepository aggregatedPriceRepository) {
-        this.exchangePriceProvider = exchangePriceProvider;
-        this.aggregatedPriceRepository = aggregatedPriceRepository;
-    }
 
     @CacheEvict(cacheNames = CacheConfig.PRICES, allEntries = true)
     @Transactional

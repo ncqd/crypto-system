@@ -22,14 +22,14 @@ import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
 @Service
+@RequiredArgsConstructor
 public class LimitOrderMatcher {
 
     private static final Logger log = LoggerFactory.getLogger(LimitOrderMatcher.class);
@@ -40,23 +40,7 @@ public class LimitOrderMatcher {
     private final WalletRepository walletRepository;
     private final TradeTransactionRepository tradeTransactionRepository;
     private final CryptoProperties cryptoProperties;
-    private final TransactionTemplate requiresNewTx;
-
-    public LimitOrderMatcher(
-            LimitOrderRepository limitOrderRepository,
-            AggregatedPriceRepository aggregatedPriceRepository,
-            WalletRepository walletRepository,
-            TradeTransactionRepository tradeTransactionRepository,
-            CryptoProperties cryptoProperties,
-            PlatformTransactionManager transactionManager) {
-        this.limitOrderRepository = limitOrderRepository;
-        this.aggregatedPriceRepository = aggregatedPriceRepository;
-        this.walletRepository = walletRepository;
-        this.tradeTransactionRepository = tradeTransactionRepository;
-        this.cryptoProperties = cryptoProperties;
-        this.requiresNewTx = new TransactionTemplate(transactionManager);
-        this.requiresNewTx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-    }
+    private final TransactionTemplate limitOrderMatchTransactionTemplate;
 
     public int scanAndMatchPendingOrders() {
         List<Long> pendingIds = limitOrderRepository.findIdsByStatusOrderByCreatedAtAsc(OrderStatus.PENDING);
@@ -88,7 +72,7 @@ public class LimitOrderMatcher {
     }
 
     public boolean tryMatchOrderInNewTransaction(Long orderId) {
-        Boolean matched = requiresNewTx.execute(status -> {
+        Boolean matched = limitOrderMatchTransactionTemplate.execute(status -> {
             try {
                 return tryMatchOrder(orderId);
             } catch (Exception ex) {

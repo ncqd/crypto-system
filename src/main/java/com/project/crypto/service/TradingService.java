@@ -20,12 +20,14 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.Instant;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class TradingService {
 
     private static final Logger log = LoggerFactory.getLogger(TradingService.class);
@@ -35,17 +37,6 @@ public class TradingService {
     private final WalletRepository walletRepository;
     private final TradeTransactionRepository tradeTransactionRepository;
     private final CryptoProperties cryptoProperties;
-
-    public TradingService(
-            AggregatedPriceRepository aggregatedPriceRepository,
-            WalletRepository walletRepository,
-            TradeTransactionRepository tradeTransactionRepository,
-            CryptoProperties cryptoProperties) {
-        this.aggregatedPriceRepository = aggregatedPriceRepository;
-        this.walletRepository = walletRepository;
-        this.tradeTransactionRepository = tradeTransactionRepository;
-        this.cryptoProperties = cryptoProperties;
-    }
 
     @Transactional(rollbackFor = Exception.class)
     public TradeResponse placeOrder(User user, TradeRequest request) {

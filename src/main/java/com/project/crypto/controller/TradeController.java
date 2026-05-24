@@ -15,6 +15,7 @@ import com.project.crypto.support.AppLog;
 import jakarta.validation.Valid;
 import java.util.Arrays;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -28,6 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/trades")
+@RequiredArgsConstructor
 public class TradeController {
 
     private static final Logger log = LoggerFactory.getLogger(TradeController.class);
@@ -35,15 +37,6 @@ public class TradeController {
     private final UserContextService userContextService;
     private final TradingService tradingService;
     private final TradeHistoryService tradeHistoryService;
-
-    public TradeController(
-            UserContextService userContextService,
-            TradingService tradingService,
-            TradeHistoryService tradeHistoryService) {
-        this.userContextService = userContextService;
-        this.tradingService = tradingService;
-        this.tradeHistoryService = tradeHistoryService;
-    }
 
     @GetMapping("/pairs")
     public List<TradingPairInfo> supportedPairs() {

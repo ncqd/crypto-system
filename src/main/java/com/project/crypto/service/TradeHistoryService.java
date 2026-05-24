@@ -7,6 +7,7 @@ import com.project.crypto.dto.TradeResponse;
 import com.project.crypto.repository.TradeTransactionRepository;
 import com.project.crypto.support.AppLog;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
@@ -16,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Transactional(readOnly = true)
+@RequiredArgsConstructor
 public class TradeHistoryService {
 
     private static final Logger log = LoggerFactory.getLogger(TradeHistoryService.class);
@@ -23,10 +25,6 @@ public class TradeHistoryService {
     private static final int MAX_LIMIT = 200;
 
     private final TradeTransactionRepository tradeTransactionRepository;
-
-    public TradeHistoryService(TradeTransactionRepository tradeTransactionRepository) {
-        this.tradeTransactionRepository = tradeTransactionRepository;
-    }
 
     public List<TradeResponse> listByUser(User user, TradingPair symbol, int limit) {
         int pageSize = normalizeLimit(limit);

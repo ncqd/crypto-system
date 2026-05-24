@@ -5,16 +5,14 @@ import com.project.crypto.config.MarketPriceProperties;
 import com.project.crypto.domain.enums.TradingPair;
 import java.util.EnumMap;
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 public class InternalExchangePriceProvider implements ExchangePriceProvider {
 
     private final MarketPriceProperties marketPriceProperties;
-
-    public InternalExchangePriceProvider(MarketPriceProperties marketPriceProperties) {
-        this.marketPriceProperties = marketPriceProperties;
-    }
 
     @Override
     public Map<TradingPair, ExchangeQuote> fetchBinanceQuotes() {

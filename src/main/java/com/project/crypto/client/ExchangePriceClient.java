@@ -10,21 +10,18 @@ import java.util.EnumMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
 @Component
 @ConditionalOnProperty(name = "crypto.price-aggregation.use-external-feeds", havingValue = "true")
+@RequiredArgsConstructor
 public class ExchangePriceClient {
 
     private final RestClient restClient;
     private final CryptoProperties properties;
-
-    public ExchangePriceClient(RestClient restClient, CryptoProperties properties) {
-        this.restClient = restClient;
-        this.properties = properties;
-    }
 
     public Map<TradingPair, ExchangeQuote> fetchBinanceQuotes() {
         Map<TradingPair, ExchangeQuote> quotes = new EnumMap<>(TradingPair.class);

@@ -7,19 +7,17 @@ import com.project.crypto.dto.AggregatedPriceResponse;
 import com.project.crypto.exception.ResourceNotFoundException;
 import com.project.crypto.repository.AggregatedPriceRepository;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Transactional(readOnly = true)
+@RequiredArgsConstructor
 public class PriceQueryService {
 
     private final AggregatedPriceRepository aggregatedPriceRepository;
-
-    public PriceQueryService(AggregatedPriceRepository aggregatedPriceRepository) {
-        this.aggregatedPriceRepository = aggregatedPriceRepository;
-    }
 
     @Cacheable(cacheNames = CacheConfig.PRICES, key = "'all'")
     public List<AggregatedPriceResponse> getLatestPrices() {

@@ -10,6 +10,7 @@ import com.project.crypto.service.LimitOrderService;
 import com.project.crypto.service.UserContextService;
 import jakarta.validation.Valid;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,15 +24,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/orders")
+@RequiredArgsConstructor
 public class LimitOrderController {
 
     private final UserContextService userContextService;
     private final LimitOrderService limitOrderService;
-
-    public LimitOrderController(UserContextService userContextService, LimitOrderService limitOrderService) {
-        this.userContextService = userContextService;
-        this.limitOrderService = limitOrderService;
-    }
 
     @PostMapping("/limit")
     @ResponseStatus(HttpStatus.CREATED)
