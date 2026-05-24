@@ -6,7 +6,12 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestClient;
 
 @Configuration
-@EnableConfigurationProperties(CryptoProperties.class)
+@EnableConfigurationProperties({
+    CryptoProperties.class,
+    AuthProperties.class,
+    WalletProperties.class,
+    MarketPriceProperties.class
+})
 public class AppConfig {
 
     @Bean

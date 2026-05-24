@@ -1,6 +1,8 @@
 package com.project.crypto;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.project.crypto.client.ExchangePriceClient.ExchangeQuote;
@@ -36,7 +38,7 @@ class PriceAggregationServiceTest {
     }
 
     @Test
-    void aggregateAndStorePrices_picksBestBidAndAskAcrossExchanges() {
+    void updatePrices_eth() {
         when(exchangePriceProvider.fetchBinanceQuotes()).thenReturn(Map.of(
                 TradingPair.ETHUSDT, new ExchangeQuote(new BigDecimal("2000.00"), new BigDecimal("2001.00")),
                 TradingPair.BTCUSDT, new ExchangeQuote(new BigDecimal("70000.00"), new BigDecimal("70010.00"))
@@ -50,10 +52,10 @@ class PriceAggregationServiceTest {
         when(aggregatedPriceRepository.save(org.mockito.ArgumentMatchers.any(AggregatedPrice.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        priceAggregationService.aggregateAndStorePrices();
+        priceAggregationService.updatePrices();
 
         ArgumentCaptor<AggregatedPrice> captor = ArgumentCaptor.forClass(AggregatedPrice.class);
-        org.mockito.Mockito.verify(aggregatedPriceRepository, org.mockito.Mockito.times(2)).save(captor.capture());
+        verify(aggregatedPriceRepository, org.mockito.Mockito.times(2)).save(captor.capture());
 
         AggregatedPrice eth = captor.getAllValues().stream()
                 .filter(price -> price.getSymbol() == TradingPair.ETHUSDT)
@@ -62,5 +64,64 @@ class PriceAggregationServiceTest {
 
         assertThat(eth.getBestBidPrice()).isEqualByComparingTo("2000.50");
         assertThat(eth.getBestAskPrice()).isEqualByComparingTo("2000.80");
+    }
+
+    @Test
+    void updatePrices_ignoresCrossedBinanceQuote() {
+        when(exchangePriceProvider.fetchBinanceQuotes()).thenReturn(Map.of(
+                TradingPair.ETHUSDT, new ExchangeQuote(new BigDecimal("2100.00"), new BigDecimal("2000.00"))
+        ));
+        when(exchangePriceProvider.fetchHuobiQuotes()).thenReturn(Map.of(
+                TradingPair.ETHUSDT, new ExchangeQuote(new BigDecimal("2000.50"), new BigDecimal("2000.80"))
+        ));
+        when(aggregatedPriceRepository.findBySymbol(TradingPair.ETHUSDT)).thenReturn(Optional.empty());
+        when(aggregatedPriceRepository.findBySymbol(TradingPair.BTCUSDT)).thenReturn(Optional.empty());
+        when(aggregatedPriceRepository.save(org.mockito.ArgumentMatchers.any(AggregatedPrice.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        priceAggregationService.updatePrices();
+
+        ArgumentCaptor<AggregatedPrice> captor = ArgumentCaptor.forClass(AggregatedPrice.class);
+        verify(aggregatedPriceRepository).save(captor.capture());
+
+        assertThat(captor.getValue().getBestBidPrice()).isEqualByComparingTo("2000.50");
+        assertThat(captor.getValue().getBestAskPrice()).isEqualByComparingTo("2000.80");
+        assertThat(captor.getValue().getBinanceBidPrice()).isNull();
+    }
+
+    @Test
+    void updatePrices_crossExchangeBidAboveAskIsAllowed() {
+        when(exchangePriceProvider.fetchBinanceQuotes()).thenReturn(Map.of(
+                TradingPair.ETHUSDT, new ExchangeQuote(new BigDecimal("2010.00"), new BigDecimal("2011.00"))
+        ));
+        when(exchangePriceProvider.fetchHuobiQuotes()).thenReturn(Map.of(
+                TradingPair.ETHUSDT, new ExchangeQuote(new BigDecimal("2000.00"), new BigDecimal("2000.50"))
+        ));
+        when(aggregatedPriceRepository.findBySymbol(TradingPair.ETHUSDT)).thenReturn(Optional.empty());
+        when(aggregatedPriceRepository.findBySymbol(TradingPair.BTCUSDT)).thenReturn(Optional.empty());
+        when(aggregatedPriceRepository.save(org.mockito.ArgumentMatchers.any(AggregatedPrice.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        priceAggregationService.updatePrices();
+
+        ArgumentCaptor<AggregatedPrice> captor = ArgumentCaptor.forClass(AggregatedPrice.class);
+        verify(aggregatedPriceRepository).save(captor.capture());
+
+        assertThat(captor.getValue().getBestBidPrice()).isEqualByComparingTo("2010.00");
+        assertThat(captor.getValue().getBestAskPrice()).isEqualByComparingTo("2000.50");
+    }
+
+    @Test
+    void updatePrices_skipsPairWhenAllQuotesInvalid() {
+        when(exchangePriceProvider.fetchBinanceQuotes()).thenReturn(Map.of(
+                TradingPair.ETHUSDT, new ExchangeQuote(new BigDecimal("2100.00"), new BigDecimal("2000.00"))
+        ));
+        when(exchangePriceProvider.fetchHuobiQuotes()).thenReturn(Map.of());
+        when(aggregatedPriceRepository.findBySymbol(TradingPair.ETHUSDT)).thenReturn(Optional.empty());
+        when(aggregatedPriceRepository.findBySymbol(TradingPair.BTCUSDT)).thenReturn(Optional.empty());
+
+        priceAggregationService.updatePrices();
+
+        verify(aggregatedPriceRepository, never()).save(org.mockito.ArgumentMatchers.any());
     }
 }

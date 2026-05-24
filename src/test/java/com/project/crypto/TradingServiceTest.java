@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+import com.project.crypto.config.CryptoProperties;
 import com.project.crypto.domain.entity.AggregatedPrice;
 import com.project.crypto.domain.entity.User;
 import com.project.crypto.domain.entity.Wallet;
@@ -17,6 +18,8 @@ import com.project.crypto.repository.TradeTransactionRepository;
 import com.project.crypto.repository.WalletRepository;
 import com.project.crypto.service.TradingService;
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,6 +39,9 @@ class TradingServiceTest {
     @Mock
     private TradeTransactionRepository tradeTransactionRepository;
 
+    @Mock
+    private CryptoProperties cryptoProperties;
+
     private TradingService tradingService;
 
     private final User user = new User();
@@ -43,15 +49,14 @@ class TradingServiceTest {
     @BeforeEach
     void setUp() {
         user.setId(1L);
-        tradingService = new TradingService(aggregatedPriceRepository, walletRepository, tradeTransactionRepository);
+        when(cryptoProperties.getMaxPriceAgeMs()).thenReturn(120_000L);
+        tradingService = new TradingService(
+                aggregatedPriceRepository, walletRepository, tradeTransactionRepository, cryptoProperties);
     }
 
     @Test
-    void executeTrade_buyUsesBestAskPriceAndUpdatesWallets() {
-        AggregatedPrice price = new AggregatedPrice();
-        price.setSymbol(TradingPair.ETHUSDT);
-        price.setBestBidPrice(new BigDecimal("2000.00"));
-        price.setBestAskPrice(new BigDecimal("2001.00"));
+    void buy_eth() {
+        AggregatedPrice price = freshPrice(TradingPair.ETHUSDT, "2000.00", "2001.00");
 
         Wallet usdtWallet = wallet("USDT", new BigDecimal("50000.00"));
         Wallet ethWallet = wallet("ETH", BigDecimal.ZERO);
@@ -65,7 +70,7 @@ class TradingServiceTest {
             return tx;
         });
 
-        var response = tradingService.executeTrade(
+        var response = tradingService.placeOrder(
                 user,
                 new TradeRequest(TradingPair.ETHUSDT, OrderSide.BUY, new BigDecimal("1.0"))
         );
@@ -77,21 +82,69 @@ class TradingServiceTest {
     }
 
     @Test
-    void executeTrade_sellRejectsInsufficientBalance() {
-        AggregatedPrice price = new AggregatedPrice();
-        price.setSymbol(TradingPair.BTCUSDT);
-        price.setBestBidPrice(new BigDecimal("70000.00"));
-        price.setBestAskPrice(new BigDecimal("70010.00"));
-
-        when(aggregatedPriceRepository.findBySymbol(TradingPair.BTCUSDT)).thenReturn(Optional.of(price));
+    void sell_btc_notEnough() {
+        when(aggregatedPriceRepository.findBySymbol(TradingPair.BTCUSDT))
+                .thenReturn(Optional.of(freshPrice(TradingPair.BTCUSDT, "70000.00", "70010.00")));
         when(walletRepository.findByUserIdAndAssetForUpdate(1L, "BTC")).thenReturn(Optional.of(wallet("BTC", BigDecimal.ZERO)));
         when(walletRepository.findByUserIdAndAssetForUpdate(1L, "USDT")).thenReturn(Optional.of(wallet("USDT", new BigDecimal("50000.00"))));
 
-        assertThatThrownBy(() -> tradingService.executeTrade(
+        assertThatThrownBy(() -> tradingService.placeOrder(
                 user,
                 new TradeRequest(TradingPair.BTCUSDT, OrderSide.SELL, new BigDecimal("0.1"))
         )).isInstanceOf(BusinessException.class)
                 .hasMessageContaining("Insufficient BTC");
+    }
+
+    @Test
+    void buy_rejectsStalePrice() {
+        AggregatedPrice price = freshPrice(TradingPair.ETHUSDT, "2000.00", "2001.00");
+        price.setUpdatedAt(Instant.now().minus(5, ChronoUnit.MINUTES));
+
+        when(aggregatedPriceRepository.findBySymbol(TradingPair.ETHUSDT)).thenReturn(Optional.of(price));
+
+        assertThatThrownBy(() -> tradingService.placeOrder(
+                user,
+                new TradeRequest(TradingPair.ETHUSDT, OrderSide.BUY, new BigDecimal("1.0"))
+        )).isInstanceOf(BusinessException.class)
+                .hasMessageContaining("stale");
+    }
+
+    @Test
+    void buy_rejectsZeroAsk() {
+        when(aggregatedPriceRepository.findBySymbol(TradingPair.ETHUSDT))
+                .thenReturn(Optional.of(freshPrice(TradingPair.ETHUSDT, "2000.00", "0")));
+
+        assertThatThrownBy(() -> tradingService.placeOrder(
+                user,
+                new TradeRequest(TradingPair.ETHUSDT, OrderSide.BUY, new BigDecimal("1.0"))
+        )).isInstanceOf(BusinessException.class)
+                .hasMessageContaining("Invalid execution price");
+    }
+
+    @Test
+    void buy_treatsNullWalletBalanceAsZero() {
+        AggregatedPrice price = freshPrice(TradingPair.ETHUSDT, "2000.00", "2001.00");
+        Wallet usdt = wallet("USDT", null);
+        Wallet eth = wallet("ETH", null);
+
+        when(aggregatedPriceRepository.findBySymbol(TradingPair.ETHUSDT)).thenReturn(Optional.of(price));
+        when(walletRepository.findByUserIdAndAssetForUpdate(1L, "ETH")).thenReturn(Optional.of(eth));
+        when(walletRepository.findByUserIdAndAssetForUpdate(1L, "USDT")).thenReturn(Optional.of(usdt));
+
+        assertThatThrownBy(() -> tradingService.placeOrder(
+                user,
+                new TradeRequest(TradingPair.ETHUSDT, OrderSide.BUY, new BigDecimal("1.0"))
+        )).isInstanceOf(BusinessException.class)
+                .hasMessageContaining("Insufficient USDT");
+    }
+
+    private AggregatedPrice freshPrice(TradingPair pair, String bid, String ask) {
+        AggregatedPrice price = new AggregatedPrice();
+        price.setSymbol(pair);
+        price.setBestBidPrice(new BigDecimal(bid));
+        price.setBestAskPrice(new BigDecimal(ask));
+        price.setUpdatedAt(Instant.now());
+        return price;
     }
 
     private Wallet wallet(String asset, BigDecimal balance) {

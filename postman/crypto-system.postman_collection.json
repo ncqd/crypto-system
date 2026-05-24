@@ -1,0 +1,374 @@
+{
+  "info": {
+    "_postman_id": "crypto-system-assignment-apis",
+    "name": "Crypto System - Full Flow",
+    "description": "## Public (no Authorization header)\n- GET /api/prices/latest\n- GET /api/prices/latest/ETHUSDT\n- GET /api/prices/latest/BTCUSDT\n- POST /api/auth/register\n- POST /api/auth/login\n\n## Protected (Authorization: Bearer {{accessToken}})\n- Wallet, trades, history\n\n## Suggested run order\n1. Folder **0 - Prices** (no login)\n2. Folder **1 - Auth** (Register or Login)\n3. Folder **Full flow** (deposit → trade → withdraw)\n\nOr run assignment folders **2 → 5** after login.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "accessToken", "value": "" },
+    { "key": "userId", "value": "" },
+    { "key": "username", "value": "trader-{{$timestamp}}" },
+    { "key": "password", "value": "secret123" }
+  ],
+  "item": [
+    {
+      "name": "0 - Prices (public, no auth)",
+      "description": "Requirement 2 — no register/login needed",
+      "item": [
+        {
+          "name": "GET all latest prices",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('ETHUSDT and BTCUSDT', () => {",
+                  "  const symbols = body.map(p => p.symbol);",
+                  "  pm.expect(symbols).to.include('ETHUSDT');",
+                  "  pm.expect(symbols).to.include('BTCUSDT');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/prices/latest",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "prices", "latest"]
+            }
+          }
+        },
+        {
+          "name": "GET latest price ETHUSDT",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const p = pm.response.json();",
+                  "pm.expect(p.symbol).to.eql('ETHUSDT');",
+                  "pm.expect(p.bestBidPrice).to.exist;",
+                  "pm.expect(p.bestAskPrice).to.exist;"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/prices/latest/ETHUSDT",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "prices", "latest", "ETHUSDT"]
+            }
+          }
+        },
+        {
+          "name": "GET latest price BTCUSDT",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const p = pm.response.json();",
+                  "pm.expect(p.symbol).to.eql('BTCUSDT');",
+                  "pm.expect(p.bestBidPrice).to.exist;",
+                  "pm.expect(p.bestAskPrice).to.exist;"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/prices/latest/BTCUSDT",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "prices", "latest", "BTCUSDT"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "1 - Auth (public)",
+      "item": [
+        {
+          "name": "Register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "const b = pm.response.json();",
+                  "pm.collectionVariables.set('accessToken', b.accessToken);",
+                  "pm.collectionVariables.set('userId', String(b.userId));",
+                  "pm.collectionVariables.set('username', b.username);",
+                  "pm.test('JWT saved', () => pm.expect(b.accessToken).to.be.a('string').and.not.empty);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.collectionVariables.set('accessToken', b.accessToken);",
+                  "pm.collectionVariables.set('userId', String(b.userId));",
+                  "pm.test('JWT saved', () => pm.expect(b.accessToken).to.be.a('string').and.not.empty);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Full flow (run after Auth)",
+      "description": "register → login → deposit → trade → withdraw. Uses Bearer {{accessToken}} from folder 1.",
+      "item": [
+        {
+          "name": "2 - Deposit USDT",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"asset\": \"USDT\",\n  \"amount\": \"10000.00000000\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/wallet/deposit",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "wallet", "deposit"]
+            }
+          }
+        },
+        {
+          "name": "3 - Get wallet balances",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const assets = pm.response.json().balances.map(b => b.asset);",
+                  "pm.expect(assets).to.include.members(['USDT', 'ETH', 'BTC']);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/wallet/balances",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "wallet", "balances"]
+            },
+            "description": "Requirement 4"
+          }
+        },
+        {
+          "name": "4 - Trade BUY ETHUSDT",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "const t = pm.response.json();",
+                  "pm.expect(t.side).to.eql('BUY');",
+                  "pm.expect(t.symbol).to.eql('ETHUSDT');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"symbol\": \"ETHUSDT\",\n  \"side\": \"BUY\",\n  \"quantity\": \"0.10000000\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/trades",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "trades"]
+            },
+            "description": "Requirement 3 — price from DB (bestAsk), no external API"
+          }
+        },
+        {
+          "name": "5 - Trade history",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json()).to.be.an('array');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/trades/history?limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "trades", "history"],
+              "query": [{ "key": "limit", "value": "20" }]
+            },
+            "description": "Requirement 5"
+          }
+        },
+        {
+          "name": "6 - Withdraw USDT",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"asset\": \"USDT\",\n  \"amount\": \"1000.00000000\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/wallet/withdraw",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "wallet", "withdraw"]
+            }
+          }
+        },
+        {
+          "name": "7 - Final balances",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/wallet/balances",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "wallet", "balances"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Extra - Trade SELL BTCUSDT",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"symbol\": \"BTCUSDT\",\n  \"side\": \"SELL\",\n  \"quantity\": \"0.01000000\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/trades",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "trades"]
+        },
+        "description": "SELL uses bestBid from DB. Need BTC balance from prior BUY or deposit."
+      }
+    },
+    {
+      "name": "Extra - GET supported pairs",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/trades/pairs",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "trades", "pairs"]
+        },
+        "description": "Requires JWT"
+      }
+    }
+  ]
+}

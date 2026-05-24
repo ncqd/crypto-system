@@ -21,8 +21,37 @@ spring:
 server:
   port: 8080
 
+logging:
+  level:
+    com.project.crypto.service.TradingService: INFO
+    com.project.crypto.service.TradeHistoryService: INFO
+    com.project.crypto.controller.TradeController: INFO
+
 crypto:
+  auth:
+    jwt-secret: crypto-system-dev-secret-change-in-production-min-32-chars
+    jwt-expiration-ms: 86400000
+  wallet:
+    initial-usdt-balance: 50000.00000000
   price-aggregation:
+    use-external-feeds: false
     interval-ms: 10000
+    max-price-age-ms: 120000
+    cache-ttl-ms: 10000
     binance-url: https://api.binance.com/api/v3/ticker/bookTicker
     huobi-url: https://api.huobi.pro/market/tickers
+  market:
+    primary:
+      ETHUSDT:
+        bid: 2000.00000000
+        ask: 2001.00000000
+      BTCUSDT:
+        bid: 70000.00000000
+        ask: 70010.00000000
+    secondary:
+      ETHUSDT:
+        bid: 2000.50000000
+        ask: 2000.80000000
+      BTCUSDT:
+        bid: 69990.00000000
+        ask: 70005.00000000

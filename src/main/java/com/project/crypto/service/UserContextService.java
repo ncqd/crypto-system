@@ -8,8 +8,6 @@ import org.springframework.stereotype.Service;
 @Service
 public class UserContextService {
 
-    public static final Long DEFAULT_USER_ID = 1L;
-
     private final UserRepository userRepository;
 
     public UserContextService(UserRepository userRepository) {

@@ -17,7 +17,7 @@ public class PriceAggregationScheduler {
             initialDelayString = "0",
             fixedDelayString = "${crypto.price-aggregation.interval-ms}"
     )
-    public void refreshAggregatedPrices() {
-        priceAggregationService.aggregateAndStorePrices();
+    public void pollPrices() {
+        priceAggregationService.updatePrices();
     }
 }

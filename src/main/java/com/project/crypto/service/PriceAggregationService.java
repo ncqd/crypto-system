@@ -2,14 +2,18 @@ package com.project.crypto.service;
 
 import com.project.crypto.client.ExchangePriceClient.ExchangeQuote;
 import com.project.crypto.client.ExchangePriceProvider;
+import com.project.crypto.config.CacheConfig;
 import com.project.crypto.domain.entity.AggregatedPrice;
 import com.project.crypto.domain.enums.TradingPair;
 import com.project.crypto.repository.AggregatedPriceRepository;
+import com.project.crypto.support.AppLog;
+import com.project.crypto.support.QuoteValidator;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,36 +32,57 @@ public class PriceAggregationService {
         this.aggregatedPriceRepository = aggregatedPriceRepository;
     }
 
+    @CacheEvict(cacheNames = CacheConfig.PRICES, allEntries = true)
     @Transactional
-    public void aggregateAndStorePrices() {
+    public void updatePrices() {
         Map<TradingPair, ExchangeQuote> binanceQuotes;
         Map<TradingPair, ExchangeQuote> huobiQuotes;
 
         try {
             binanceQuotes = exchangePriceProvider.fetchBinanceQuotes();
         } catch (Exception ex) {
-            log.warn("Failed to fetch Binance prices: {}", ex.getMessage());
+            AppLog.warn(
+                    log,
+                    PriceAggregationService.class,
+                    "updatePrices",
+                    "BinanceFetch failed reason=%s".formatted(ex.getMessage()));
             binanceQuotes = Map.of();
         }
 
         try {
             huobiQuotes = exchangePriceProvider.fetchHuobiQuotes();
         } catch (Exception ex) {
-            log.warn("Failed to fetch Huobi prices: {}", ex.getMessage());
+            AppLog.warn(
+                    log,
+                    PriceAggregationService.class,
+                    "updatePrices",
+                    "HuobiFetch failed reason=%s".formatted(ex.getMessage()));
             huobiQuotes = Map.of();
         }
 
         for (TradingPair pair : TradingPair.values()) {
-            ExchangeQuote binance = binanceQuotes.get(pair);
-            ExchangeQuote huobi = huobiQuotes.get(pair);
+            ExchangeQuote binance = usableQuote(binanceQuotes.get(pair));
+            ExchangeQuote huobi = usableQuote(huobiQuotes.get(pair));
 
             if (binance == null && huobi == null) {
-                log.warn("No quotes available for {}", pair);
+                AppLog.warn(
+                        log,
+                        PriceAggregationService.class,
+                        "updatePrices",
+                        "AggregatedPrice symbol=%s no quotes".formatted(pair));
                 continue;
             }
 
-            BigDecimal bestBid = bestBid(binance, huobi);
-            BigDecimal bestAsk = bestAsk(binance, huobi);
+            BigDecimal bestBid = maxBid(binance, huobi);
+            BigDecimal bestAsk = minAsk(binance, huobi);
+            if (!QuoteValidator.hasPositivePrices(bestBid, bestAsk)) {
+                AppLog.warn(
+                        log,
+                        PriceAggregationService.class,
+                        "updatePrices",
+                        "AggregatedPrice symbol=%s skipped invalid bid/ask".formatted(pair));
+                continue;
+            }
 
             AggregatedPrice price = aggregatedPriceRepository.findBySymbol(pair)
                     .orElseGet(() -> {
@@ -75,14 +100,19 @@ public class PriceAggregationService {
             price.setUpdatedAt(Instant.now());
 
             aggregatedPriceRepository.save(price);
-            log.debug("Updated aggregated price for {}: bid={}, ask={}", pair, bestBid, bestAsk);
+            AppLog.debug(
+                    log,
+                    PriceAggregationService.class,
+                    "updatePrices",
+                    "AggregatedPrice symbol=%s bid=%s ask=%s".formatted(pair, bestBid, bestAsk));
         }
     }
 
-    /**
-     * Best bid = highest bid across exchanges (used for SELL orders).
-     */
-    private BigDecimal bestBid(ExchangeQuote binance, ExchangeQuote huobi) {
+    private ExchangeQuote usableQuote(ExchangeQuote quote) {
+        return QuoteValidator.isUsable(quote) ? quote : null;
+    }
+
+    private BigDecimal maxBid(ExchangeQuote binance, ExchangeQuote huobi) {
         BigDecimal bid = null;
         if (binance != null) {
             bid = binance.bidPrice();
@@ -93,10 +123,7 @@ public class PriceAggregationService {
         return bid;
     }
 
-    /**
-     * Best ask = lowest ask across exchanges (used for BUY orders).
-     */
-    private BigDecimal bestAsk(ExchangeQuote binance, ExchangeQuote huobi) {
+    private BigDecimal minAsk(ExchangeQuote binance, ExchangeQuote huobi) {
         BigDecimal ask = null;
         if (binance != null) {
             ask = binance.askPrice();
