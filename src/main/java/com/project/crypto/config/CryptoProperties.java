@@ -5,11 +5,20 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "crypto.price-aggregation")
 public class CryptoProperties {
 
-    private long intervalMs = 10000;
-    private long maxPriceAgeMs = 120_000;
-    private long cacheTtlMs = 10_000;
+    private boolean useExternalFeeds = true;
+    private long intervalMs = 2000;
+    private long maxPriceAgeMs = 30_000;
+    private long cacheTtlMs = 2000;
     private String binanceUrl;
     private String huobiUrl;
+
+    public boolean isUseExternalFeeds() {
+        return useExternalFeeds;
+    }
+
+    public void setUseExternalFeeds(boolean useExternalFeeds) {
+        this.useExternalFeeds = useExternalFeeds;
+    }
 
     public long getIntervalMs() {
         return intervalMs;

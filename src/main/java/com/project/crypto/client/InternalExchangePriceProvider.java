@@ -5,11 +5,9 @@ import com.project.crypto.config.MarketPriceProperties;
 import com.project.crypto.domain.enums.TradingPair;
 import java.util.EnumMap;
 import java.util.Map;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 @Component
-@ConditionalOnProperty(name = "crypto.price-aggregation.use-external-feeds", havingValue = "false", matchIfMissing = true)
 public class InternalExchangePriceProvider implements ExchangePriceProvider {
 
     private final MarketPriceProperties marketPriceProperties;

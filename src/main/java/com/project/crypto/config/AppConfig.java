@@ -1,8 +1,10 @@
 package com.project.crypto.config;
 
+import java.time.Duration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
 
 @Configuration
@@ -14,13 +16,22 @@ import org.springframework.web.client.RestClient;
 })
 public class AppConfig {
 
+    private static final int TIMEOUT_MS = (int) Duration.ofSeconds(8).toMillis();
+
     @Bean
     public RestClient.Builder restClientBuilder() {
-        return RestClient.builder();
+        return RestClient.builder().requestFactory(requestFactory());
     }
 
     @Bean
     public RestClient restClient(RestClient.Builder builder) {
         return builder.build();
+    }
+
+    private static SimpleClientHttpRequestFactory requestFactory() {
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(TIMEOUT_MS);
+        factory.setReadTimeout(TIMEOUT_MS);
+        return factory;
     }
 }

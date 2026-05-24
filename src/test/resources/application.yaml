@@ -1,0 +1,3 @@
+crypto:
+  price-aggregation:
+    use-external-feeds: false

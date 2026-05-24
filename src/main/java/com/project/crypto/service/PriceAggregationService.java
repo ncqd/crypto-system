@@ -100,7 +100,7 @@ public class PriceAggregationService {
             price.setUpdatedAt(Instant.now());
 
             aggregatedPriceRepository.save(price);
-            AppLog.debug(
+            AppLog.info(
                     log,
                     PriceAggregationService.class,
                     "updatePrices",

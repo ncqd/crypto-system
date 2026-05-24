@@ -23,7 +23,11 @@ server:
 
 logging:
   level:
+    com.project.crypto.scheduler.PriceAggregationScheduler: INFO
+    com.project.crypto.service.PriceAggregationService: INFO
     com.project.crypto.service.TradingService: INFO
+    com.project.crypto.service.LimitOrderService: INFO
+    com.project.crypto.service.LimitOrderMatcher: INFO
     com.project.crypto.service.TradeHistoryService: INFO
     com.project.crypto.controller.TradeController: INFO
 
@@ -34,10 +38,10 @@ crypto:
   wallet:
     initial-usdt-balance: 50000.00000000
   price-aggregation:
-    use-external-feeds: false
-    interval-ms: 10000
-    max-price-age-ms: 120000
-    cache-ttl-ms: 10000
+    use-external-feeds: true
+    interval-ms: 2000
+    max-price-age-ms: 30000
+    cache-ttl-ms: 2000
     binance-url: https://api.binance.com/api/v3/ticker/bookTicker
     huobi-url: https://api.huobi.pro/market/tickers
   market:

@@ -6,7 +6,7 @@ import com.project.crypto.config.CryptoProperties;
 import com.project.crypto.domain.enums.TradingPair;
 import com.project.crypto.support.QuoteValidator;
 import java.math.BigDecimal;
-import java.util.Arrays;
+import java.util.EnumMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -16,7 +16,7 @@ import org.springframework.web.client.RestClient;
 
 @Component
 @ConditionalOnProperty(name = "crypto.price-aggregation.use-external-feeds", havingValue = "true")
-public class ExchangePriceClient implements ExchangePriceProvider {
+public class ExchangePriceClient {
 
     private final RestClient restClient;
     private final CryptoProperties properties;
@@ -26,8 +26,33 @@ public class ExchangePriceClient implements ExchangePriceProvider {
         this.properties = properties;
     }
 
-    @Override
     public Map<TradingPair, ExchangeQuote> fetchBinanceQuotes() {
+        Map<TradingPair, ExchangeQuote> quotes = new EnumMap<>(TradingPair.class);
+        for (TradingPair pair : TradingPair.values()) {
+            fetchBinanceSymbol(pair).ifPresent(quote -> quotes.put(pair, quote));
+        }
+        if (!quotes.isEmpty()) {
+            return quotes;
+        }
+        return fetchBinanceQuotesBulk();
+    }
+
+    private Optional<ExchangeQuote> fetchBinanceSymbol(TradingPair pair) {
+        try {
+            BinanceBookTicker ticker = restClient.get()
+                    .uri(properties.getBinanceUrl() + "?symbol=" + pair.name())
+                    .retrieve()
+                    .body(BinanceBookTicker.class);
+            if (ticker == null) {
+                return Optional.empty();
+            }
+            return toQuote(ticker.getBidPrice(), ticker.getAskPrice());
+        } catch (Exception ex) {
+            return Optional.empty();
+        }
+    }
+
+    private Map<TradingPair, ExchangeQuote> fetchBinanceQuotesBulk() {
         BinanceBookTicker[] tickers = restClient.get()
                 .uri(properties.getBinanceUrl())
                 .retrieve()
@@ -37,7 +62,7 @@ public class ExchangePriceClient implements ExchangePriceProvider {
             return Map.of();
         }
 
-        return Arrays.stream(tickers)
+        return java.util.Arrays.stream(tickers)
                 .filter(ticker -> isSupportedSymbol(ticker.getSymbol()))
                 .map(ticker -> Map.entry(
                         TradingPair.valueOf(ticker.getSymbol()),
@@ -46,7 +71,6 @@ public class ExchangePriceClient implements ExchangePriceProvider {
                 .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().get()));
     }
 
-    @Override
     public Map<TradingPair, ExchangeQuote> fetchHuobiQuotes() {
         HuobiTickerResponse response = restClient.get()
                 .uri(properties.getHuobiUrl())
